@@ -13,6 +13,20 @@ namespace Repeat.IPC {
             this.Device = "keyboard";
         }
 
+        public bool Press(int key) {
+            Action = "press";
+            ClearParams();
+            ParamInt.Add(key);
+            return SendRequest() == null ? false : true;
+        }
+
+        public bool Release(int key) {
+            Action = "release";
+            ClearParams();
+            ParamInt.Add(key);
+            return SendRequest() == null ? false : true;
+        }
+
         public bool DoType(params int[] keyCodes) {
             Action = "type";
             ClearParams();

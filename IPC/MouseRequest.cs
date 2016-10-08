@@ -14,6 +14,25 @@ namespace Repeat.IPC {
             this.Device = "mouse";
         }
 
+        public bool Press(int mask) {
+            Action = "press";
+            ClearParams();
+            ParamInt.Add(mask);
+
+            return SendRequest() == null ? false : true;
+        }
+        public bool Release(int mask) {
+            Action = "release";
+            ClearParams();
+            ParamInt.Add(mask);
+
+            return SendRequest() == null ? false : true;
+        }
+
+        public bool Click(int mask) {
+            return Press(mask) && Release(mask);
+        }
+
         public bool LeftClick() {
             Action = "left_click";
             ParamInt.Clear();
