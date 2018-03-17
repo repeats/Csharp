@@ -44,6 +44,7 @@ namespace Repeat.ipc {
         }
 
         protected internal string internalProcess(string message) {
+            message = Encoding.UTF8.GetString(Convert.FromBase64String(message));
             JObject parsedMessage = JObject.Parse(message);
 
             string type = "";

@@ -92,6 +92,7 @@ namespace Repeat.ipc {
 
                 if (sendQueue.TryDequeue(out toSend)) {
                     try {
+                        toSend = Convert.ToBase64String(Encoding.UTF8.GetBytes(toSend));
                         string sending = String.Format("{0}{1}{2}{3}{4}", REPEAT_DELIMITER, REPEAT_DELIMITER, toSend, REPEAT_DELIMITER, REPEAT_DELIMITER);
                         byte[] rawData = System.Text.Encoding.ASCII.GetBytes(sending);
                         socket.Send(rawData);
