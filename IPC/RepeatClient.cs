@@ -19,7 +19,8 @@ namespace Repeat.ipc {
         private const int REPEAT_SERVER_TIMEOUT_MS = 10 * 1000;
         private const int REPEAT_CLIENT_TIMEOUT_MS = (int)(REPEAT_SERVER_TIMEOUT_MS * 0.8);
         public const char REPEAT_DELIMITER = '\x02';
-        
+
+        private int port;
         private Socket socket;
         private bool IsTerminated { get; set; }
         private Thread readThread, writeThread;
@@ -41,7 +42,8 @@ namespace Repeat.ipc {
 
         public ToolRequest tool { get; private set; }
 
-        public RepeatClient() {
+        public RepeatClient(int port) {
+            this.port = port;
             synchronizationEvents = new Dictionary<int, AutoResetEvent>();
             returnedObjects = new Dictionary<int, JToken>();
 
@@ -124,7 +126,7 @@ namespace Repeat.ipc {
             logger.Info("Establishing connection to " + host);
 
             try {
-                socket.Connect(host, 9999);
+                socket.Connect(host, port);
                 logger.Info("Connection established.");
             } catch (SocketException) {
                 logger.Fatal("Unable to connect to Repeat server. Terminating...");

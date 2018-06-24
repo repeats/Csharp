@@ -17,6 +17,7 @@ namespace Repeat
     class Program {
 
         private static readonly ILog logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private const int DEFAULT_PORT = 9999;
         /**************************************************************************************************************************************/
         // Declare the SetConsoleCtrlHandler function
         // as external and receiving a delegate.
@@ -49,10 +50,29 @@ namespace Repeat
             return true;
         }
 
+        private static int GetPort(String[] args)
+        {
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i].Equals("--port"))
+                {
+                    int output = 0;
+                    if (int.TryParse(args[i + 1], out output))
+                    {
+                        logger.Info("Using provided port " + DEFAULT_PORT);
+                        return output;
+                    }
+                }
+            }
+            logger.Info("Using default port " + DEFAULT_PORT);
+            return DEFAULT_PORT;
+        }
+
         public static void Main(String[] args) {
             SetConsoleCtrlHandler(new HandlerRoutine(ConsoleCtrlCheck), true);
             BasicConfigurator.Configure();
-            client = new RepeatClient();
+            int port = GetPort(args);
+            client = new RepeatClient(port);
             client.StartRunning();
             logger.Info("Successfully started C# IPC client.");
         }
