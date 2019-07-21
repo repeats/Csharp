@@ -31,7 +31,8 @@ namespace Repeat
 
         // An enumerated type for the control messages
         // sent to the handler routine.
-        public enum CtrlTypes {
+        public enum CtrlTypes
+        {
             CTRL_C_EVENT = 0,
             CTRL_BREAK_EVENT,
             CTRL_CLOSE_EVENT,
@@ -43,7 +44,8 @@ namespace Repeat
 
         private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)
         {
-            if (client != null) {
+            if (client != null)
+            {
                 logger.Info("Caught signal. Terminating IPC client...");
                 client.StopRunning();
             }
@@ -68,7 +70,8 @@ namespace Repeat
             return DEFAULT_PORT;
         }
 
-        public static void Main(String[] args) {
+        public static void Main(String[] args)
+        {
             SetConsoleCtrlHandler(new HandlerRoutine(ConsoleCtrlCheck), true);
             BasicConfigurator.Configure();
             int port = GetPort(args);

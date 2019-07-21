@@ -19,17 +19,15 @@ namespace Repeat.userDefinedAction {
         private const string SUCCESS = "Success";
         private const string FAILURE = "Failure";
 
-        private int idCount;
         private RepeatClient client;
         private CSCompiler compiler;
         private UserDefinedAction emptyAction;
-        private Dictionary<int, UserDefinedAction> actions;
+        private Dictionary<string, UserDefinedAction> actions;
 
         public TaskManager(RepeatClient client) {
             this.client = client;
-            this.idCount = 0;
             this.compiler = new CSCompiler(".");
-            actions = new Dictionary<int, UserDefinedAction>();
+            actions = new Dictionary<string, UserDefinedAction>();
             emptyAction = new EmptyAction("");
         }
 
@@ -51,7 +49,7 @@ namespace Repeat.userDefinedAction {
                 return result;
             } else if (action == "run_task") {
                 JEnumerable<JToken> parameterList = parameters.Children();
-                int taskID = parameterList.First().Value<int>();
+                string taskID = parameterList.First().Value<string>();
                 JObject invokerJSON = parameterList.Skip(1).First().Value<JObject>();
 
                 List<int> hotkeys = new List<int>();
@@ -86,14 +84,14 @@ namespace Repeat.userDefinedAction {
                 activation.mouseGesture = mouseGesture;
                 return RunTask(taskID, activation);
             } else if (action == "remove_task") {
-                int taskID = parameters.Children().First().Value<int>();
+                string taskID = parameters.Children().First().Value<string>();
                 return RemoveTask(taskID);
             } else {
                 return GenerateReply(FAILURE, "Unknown action " + action);
             }
         }
 
-        private JObject RunTask(int id, Activation invoker) {
+        private JObject RunTask(string id, Activation invoker) {
             Console.WriteLine("Doing id " + id);
             UserDefinedAction toDo;
             if (actions.TryGetValue(id, out toDo)) {
@@ -131,16 +129,16 @@ namespace Repeat.userDefinedAction {
                 if (action == null) {
                     return GenerateReply(FAILURE, "Cannot compile file " + filePath);
                 } else {
-                    idCount++;
-                    actions[idCount] = action;
+                    string newId = System.Guid.NewGuid().ToString();
+                    actions[newId] = action;
                     action.FileName = filePath;
                     logger.Info("Successfully compiled source code.");
-                    return GenerateReply(SUCCESS, GenerateTaskReply(idCount, action));
+                    return GenerateReply(SUCCESS, GenerateTaskReply(newId, action));
                 }
             }
         }
 
-        private JObject RemoveTask(int id) {
+        private JObject RemoveTask(string id) {
             UserDefinedAction toRemove;
             if (actions.TryGetValue(id, out toRemove)) {
                 actions.Remove(id);
@@ -157,7 +155,7 @@ namespace Repeat.userDefinedAction {
                 );
         }
 
-        private JObject GenerateTaskReply(int id, UserDefinedAction task) {
+        private JObject GenerateTaskReply(string id, UserDefinedAction task) {
             return new JObject(
                 new JProperty("id", id), 
                 new JProperty("file_name", task.FileName)
