@@ -60,8 +60,13 @@ namespace Repeat.userDefinedAction {
                         // Get the first hotkey, or leave as empty list.
                         JArray hotkeyListJSON = token.Value<JArray>();
                         foreach (JArray hotkey in hotkeyListJSON.Children<JArray>()) {
-                            foreach (JToken key in hotkey.Children()) {
-                                hotkeys.Add(key.Value<int>());
+                            foreach (JObject keyObject in hotkey.Children()) {
+                                foreach (JProperty keyProperty in keyObject.Properties()) {
+                                    JToken keyToken = keyProperty.Value;
+                                    if (keyProperty.Name == "key") {
+                                        hotkeys.Add(keyToken.Value<int>());
+                                    }
+                                }
                             }
                             break;
                         }
