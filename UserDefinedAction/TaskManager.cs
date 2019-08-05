@@ -151,7 +151,8 @@ namespace Repeat.userDefinedAction {
         private JObject GenerateReply(string status, object message) {
             return new JObject(
                 new JProperty("status", status),
-                new JProperty("message", message)
+                new JProperty("message", message),
+                new JProperty("is_reply_message", true)
                 );
         }
 
