@@ -50,43 +50,8 @@ namespace Repeat.userDefinedAction {
             } else if (action == "run_task") {
                 JEnumerable<JToken> parameterList = parameters.Children();
                 string taskID = parameterList.First().Value<string>();
-                JObject invokerJSON = parameterList.Skip(1).First().Value<JObject>();
+                Activation activation = parseActivationFromRunTaskParameters(parameters);
 
-                List<int> hotkeys = new List<int>();
-                string mouseGesture = null;
-                foreach (JProperty property in invokerJSON.Properties()) {
-                    JToken token = property.Value;
-                    if (property.Name == "hotkey") {
-                        // Get the first hotkey, or leave as empty list.
-                        JArray hotkeyListJSON = token.Value<JArray>();
-                        foreach (JArray hotkey in hotkeyListJSON.Children<JArray>()) {
-                            foreach (JObject keyObject in hotkey.Children()) {
-                                foreach (JProperty keyProperty in keyObject.Properties()) {
-                                    JToken keyToken = keyProperty.Value;
-                                    if (keyProperty.Name == "key") {
-                                        hotkeys.Add(keyToken.Value<int>());
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    } else if (property.Name == "mouse_gesture") {
-                        // Get the first mouse gesture, or leave as null.
-                        JArray mouseGestureListJSON = token.Value<JArray>();
-                        foreach (JObject gesture in mouseGestureListJSON.Children<JObject>()) {
-                            foreach (JProperty prop in gesture.Properties()) {
-                                if (prop.Name == "name") {
-                                    mouseGesture = prop.Value.ToString();
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-
-                Activation activation = new Activation();
-                activation.hotkeys = hotkeys;
-                activation.mouseGesture = mouseGesture;
                 return RunTask(taskID, activation);
             } else if (action == "remove_task") {
                 string taskID = parameters.Children().First().Value<string>();
@@ -107,9 +72,10 @@ namespace Repeat.userDefinedAction {
                 try {
                     toDo.Action();
                 } catch (Exception e) {
+                    Console.WriteLine("CCCCCCCC " + e.StackTrace + " -- " + e.Message);
                     return GenerateReply(FAILURE, "Encountered exception while executing task\n" + e.StackTrace);
                 }
-                
+
                 return GenerateReply(SUCCESS, GenerateTaskReply(id, toDo));
             } else {
                 return GenerateReply(FAILURE, "Unknown action with id " + id);
@@ -151,6 +117,110 @@ namespace Repeat.userDefinedAction {
             } else {
                 return GenerateReply(SUCCESS, GenerateTaskReply(id, emptyAction));
             }
+        }
+
+        private Activation parseActivationFromRunTaskParameters(JArray parameters) {
+            JEnumerable<JToken> parameterList = parameters.Children();
+            string taskID = parameterList.First().Value<string>();
+            JObject invokerJSON = parameterList.Skip(1).First().Value<JObject>();
+
+            List<int> hotkeys = new List<int>();
+            List<int> keySequence = new List<int>();
+            ActivationVariable activationVariable = null;
+            string activationPhrase = null;
+            string mouseGesture = null;
+            foreach (JProperty property in invokerJSON.Properties()) {
+                JToken token = property.Value;
+                if (property.Name == "hotkey") {
+                    // Get the first hotkey, or leave as empty list.
+                    JArray hotkeyListJSON = token.Value<JArray>();
+                    foreach (JArray hotkey in hotkeyListJSON.Children<JArray>()) {
+                        foreach (JObject keyObject in hotkey.Children()) {
+                            foreach (JProperty keyProperty in keyObject.Properties()) {
+                                JToken keyToken = keyProperty.Value;
+                                if (keyProperty.Name == "key") {
+                                    hotkeys.Add(keyToken.Value<int>());
+                                }
+                            }
+                        }
+                        break;
+                    }
+                } else if (property.Name == "key_sequence") {
+                    // Get the first key sequence, or leave as empty list.
+                    JArray hotkeyListJSON = token.Value<JArray>();
+                    foreach (JArray hotkey in hotkeyListJSON.Children<JArray>()) {
+                        foreach (JObject keyObject in hotkey.Children()) {
+                            foreach (JProperty keyProperty in keyObject.Properties()) {
+                                JToken keyToken = keyProperty.Value;
+                                if (keyProperty.Name == "key") {
+                                    hotkeys.Add(keyToken.Value<int>());
+                                }
+                            }
+                        }
+                        break;
+                    }
+                } else if (property.Name == "variables") {
+                    // Get the first variable, or leave as empty.
+                    string varNamespace = "";
+                    string name = "";
+                    JArray variableList = token.Value<JArray>();
+                    foreach (JObject variable in variableList.Children<JObject>()) {
+                        foreach (JProperty innerVariable in variable.Properties()) {
+                            if (innerVariable.Name != "variable") {
+                                continue;
+                            }
+                            JToken innerVariableToken = innerVariable.Value;
+                            JObject innerVariableObject = innerVariableToken.Value<JObject>();
+                            foreach (JProperty prop in innerVariableObject.Properties()) {
+                                JToken keyToken = prop.Value;
+                                if (prop.Name == "namespace") {
+                                    varNamespace = prop.Value.ToString();
+                                } else if (prop.Name == "name") {
+                                    name = prop.Value.ToString();
+                                }
+                            }
+                        }
+
+                        activationVariable = new ActivationVariable{
+                            varNamespace = varNamespace,
+                            name = name
+                        };
+                        break;
+                    }
+                } else if (property.Name == "phrases") {
+                    // Get the first phrase, or leave as empty.
+                    JArray phrasesList = token.Value<JArray>();
+                    foreach (JObject phrase in phrasesList.Children<JObject>()) {
+                        foreach (JProperty prop in phrase.Properties()) {
+                            JToken keyToken = prop.Value;
+                            if (prop.Name == "value") {
+                                activationPhrase = prop.Value.ToString();
+                            }
+                        }
+                        break;
+                    }
+                }
+                else if (property.Name == "mouse_gesture") {
+                    // Get the first mouse gesture, or leave as null.
+                    JArray mouseGestureListJSON = token.Value<JArray>();
+                    foreach (JObject gesture in mouseGestureListJSON.Children<JObject>()) {
+                        foreach (JProperty prop in gesture.Properties()) {
+                            if (prop.Name == "name") {
+                                mouseGesture = prop.Value.ToString();
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            Activation activation = new Activation();
+            activation.hotkeys = hotkeys;
+            activation.keySequence = keySequence;
+            activation.activationVariable = activationVariable;
+            activation.phrase = activationPhrase;
+            activation.mouseGesture = mouseGesture;
+            return activation;
         }
 
         private JObject GenerateReply(string status, object message) {
